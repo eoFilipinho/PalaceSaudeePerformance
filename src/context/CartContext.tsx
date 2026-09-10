@@ -12,6 +12,7 @@ type CartContextType = {
   addItem: (product: Product) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
+  clear: () => void;
 };
 
 const CartContext = createContext<CartContextType | null>(null);

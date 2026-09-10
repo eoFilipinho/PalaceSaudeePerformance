@@ -16,6 +16,8 @@ const ProductDetailContent = () => {
   const { addItem, count, setIsOpen } = useCart();
   const [quantity, setQuantity] = useState(1);
 
+  const { products, loading } = useProducts();
+
   const product = products.find((p) => p.id === id);
 
   const related = useMemo(() => {
@@ -23,7 +25,15 @@ const ProductDetailContent = () => {
     return products
       .filter((p) => p.category === product.category && p.id !== product.id)
       .slice(0, 4);
-  }, [product]);
+  }, [product, products]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
 
   if (!product) {
     return (

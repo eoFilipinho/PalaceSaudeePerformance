@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Minus, ShoppingBag } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useMemo } from "react";
-import { products } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
 import { CartProvider } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";

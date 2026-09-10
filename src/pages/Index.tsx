@@ -4,23 +4,22 @@ import CartDrawer from "@/components/CartDrawer";
 import HeroSection from "@/components/HeroSection";
 import ProductGrid from "@/components/ProductGrid";
 import { CartProvider } from "@/context/CartContext";
-import { products, featuredProducts } from "@/data/products";
-
-const categoryMap: Record<string, string> = {
-  Cereais: "Cereais",
-  Temperos: "Temperos",
-  Vitaminas: "Vitaminas",
-  Suplementação: "Suplementação",
-  Chás: "Chás",
-  "Grãos e Sementes": "Grãos e Sementes",
-};
+import { useProducts } from "@/hooks/useProducts";
 
 const IndexContent = () => {
   const [activeTab, setActiveTab] = useState("Início");
   const [searchQuery, setSearchQuery] = useState("");
+  const { products } = useProducts();
+
+  const featuredProducts = useMemo(() => products.filter((_, i) => i % 4 === 0).slice(0, 6), [products]);
 
   const filteredProducts = useMemo(() => {
-    let list = activeTab === "Início" ? featuredProducts : activeTab === "Produtos" ? products : products.filter((p) => p.category === categoryMap[activeTab]);
+    let list =
+      activeTab === "Início"
+        ? featuredProducts
+        : activeTab === "Produtos"
+        ? products
+        : products.filter((p) => p.category === activeTab);
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -30,7 +29,7 @@ const IndexContent = () => {
     }
 
     return list;
-  }, [activeTab, searchQuery]);
+  }, [activeTab, searchQuery, products, featuredProducts]);
 
   const title = activeTab === "Início" ? "Colheita da Semana" : activeTab === "Produtos" ? "Todos os Produtos" : activeTab;
 

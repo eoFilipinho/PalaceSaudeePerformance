@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useCategories } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,21 +18,18 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ArrowLeft, Package, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowLeft, Package, Search, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const CATEGORIES = ["Cereais", "Temperos", "Vitaminas", "Suplementação", "Chás", "Grãos e Sementes"];
 
 type Product = {
   id: string;
   name: string;
   price: number;
-  category: string;
+  category_id: string | null;
   image_url: string | null;
   weight: string | null;
   description: string | null;
@@ -43,7 +42,7 @@ type Product = {
 const emptyForm = {
   name: "",
   price: "",
-  category: "",
+  category_id: "",
   image_url: "",
   weight: "",
   description: "",
@@ -52,9 +51,12 @@ const emptyForm = {
 };
 
 const Admin = () => {
-  const [authenticated, setAuthenticated] = useState(false);
+  const { user, isAdmin, loading: authLoading, signIn, signOut } = useAuth();
+  const { categories } = useCategories();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [signingIn, setSigningIn] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -63,6 +65,10 @@ const Admin = () => {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("Todos");
+
+  const categoryName = (id: string | null) =>
+    categories.find((c) => c.id === id)?.name ?? "—";
+
   const fetchProducts = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -73,58 +79,94 @@ const Admin = () => {
     if (error) {
       toast.error(`Erro ao carregar produtos: ${error.message}`);
     } else {
-      setProducts(data || []);
+      setProducts((data as Product[]) || []);
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    if (authenticated) {
-      fetchProducts();
-    }
-  }, [authenticated]);
+    if (isAdmin) fetchProducts();
+  }, [isAdmin]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === "admin") {
-      setAuthenticated(true);
-      setLoginError(false);
-    } else {
-      setLoginError(true);
-    }
+    setSigningIn(true);
+    setLoginError(null);
+    const { error } = await signIn(email, password);
+    if (error) setLoginError("E-mail ou senha inválidos");
+    setPassword("");
+    setSigningIn(false);
   };
 
-  if (!authenticated) {
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-full max-w-sm mx-auto p-8">
           <div className="text-center mb-8">
             <Package className="w-10 h-10 text-primary mx-auto mb-3" />
             <h1 className="text-xl font-semibold text-foreground">Painel Admin</h1>
-            <p className="text-sm text-muted-foreground mt-1">Digite a senha para acessar</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {user && !isAdmin
+                ? "Esta conta não tem permissão de administrador"
+                : "Entre com seu e-mail e senha de administrador"}
+            </p>
           </div>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <Label htmlFor="admin-password">Senha</Label>
-              <Input
-                id="admin-password"
-                type="password"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setLoginError(false); }}
-                placeholder="Senha do admin"
-                autoFocus
-              />
-              {loginError && (
-                <p className="text-sm text-destructive mt-1">Senha incorreta</p>
-              )}
+
+          {user && !isAdmin ? (
+            <div className="space-y-4">
+              <Button variant="outline" className="w-full gap-2" onClick={() => signOut()}>
+                <LogOut className="w-4 h-4" /> Sair desta conta
+              </Button>
+              <div className="text-center">
+                <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  ← Voltar para a loja
+                </Link>
+              </div>
             </div>
-            <Button type="submit" className="w-full">Entrar</Button>
-            <div className="text-center">
-              <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                ← Voltar para a loja
-              </Link>
-            </div>
-          </form>
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <Label htmlFor="admin-email">E-mail</Label>
+                <Input
+                  id="admin-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setLoginError(null); }}
+                  placeholder="admin@exemplo.com"
+                  required
+                  autoFocus
+                />
+              </div>
+              <div>
+                <Label htmlFor="admin-password">Senha</Label>
+                <Input
+                  id="admin-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setLoginError(null); }}
+                  placeholder="Sua senha"
+                  required
+                />
+                {loginError && <p className="text-sm text-destructive mt-1">{loginError}</p>}
+              </div>
+              <Button type="submit" className="w-full" disabled={signingIn}>
+                {signingIn ? "Entrando..." : "Entrar"}
+              </Button>
+              <div className="text-center">
+                <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  ← Voltar para a loja
+                </Link>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     );
@@ -141,7 +183,7 @@ const Admin = () => {
     setForm({
       name: product.name,
       price: String(product.price),
-      category: product.category,
+      category_id: product.category_id ?? "",
       image_url: product.image_url || "",
       weight: product.weight || "",
       description: product.description || "",
@@ -152,7 +194,7 @@ const Admin = () => {
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.price || !form.category) {
+    if (!form.name || !form.price || !form.category_id) {
       toast.error("Preencha nome, preço e categoria");
       return;
     }
@@ -161,7 +203,7 @@ const Admin = () => {
     const payload = {
       name: form.name,
       price: parseFloat(form.price),
-      category: form.category,
+      category_id: form.category_id,
       image_url: form.image_url || null,
       weight: form.weight || null,
       description: form.description || null,
@@ -226,13 +268,14 @@ const Admin = () => {
   };
 
   const filteredProducts = products.filter((p) => {
-    const matchesCategory = categoryFilter === "Todos" || p.category === categoryFilter;
+    const catName = categoryName(p.category_id);
+    const matchesCategory = categoryFilter === "Todos" || p.category_id === categoryFilter;
     const term = search.trim().toLowerCase();
     const matchesSearch =
       !term ||
       p.name.toLowerCase().includes(term) ||
       (p.description || "").toLowerCase().includes(term) ||
-      p.category.toLowerCase().includes(term);
+      catName.toLowerCase().includes(term);
     return matchesCategory && matchesSearch;
   });
 
@@ -265,9 +308,9 @@ const Admin = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Todos">Todas as categorias</SelectItem>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -275,6 +318,9 @@ const Admin = () => {
             <Button onClick={openCreate} className="gap-2 shrink-0">
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Novo Produto</span>
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => signOut()} title="Sair">
+              <LogOut className="w-4 h-4" />
             </Button>
           </div>
         </div>
@@ -333,7 +379,9 @@ const Admin = () => {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{product.category}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {categoryName(product.category_id)}
+                    </TableCell>
                     <TableCell className="text-right font-medium">
                       R$ {Number(product.price).toFixed(2)}
                     </TableCell>
@@ -436,16 +484,16 @@ const Admin = () => {
               <div>
                 <Label>Categoria *</Label>
                 <Select
-                  value={form.category}
-                  onValueChange={(val) => setForm({ ...form, category: val })}
+                  value={form.category_id}
+                  onValueChange={(val) => setForm({ ...form, category_id: val })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

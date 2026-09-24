@@ -1,0 +1,1 @@
+COMMENT ON TABLE public.orders IS 'Pedidos realizados pelos clientes';

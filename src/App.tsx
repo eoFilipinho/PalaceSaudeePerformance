@@ -9,6 +9,8 @@ import ProductDetail from "./pages/ProductDetail.tsx";
 import Admin from "./pages/Admin.tsx";
 import MyOrders from "./pages/MyOrders.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import CustomerArea from "./pages/CustomerArea.tsx";
+import OrderDetail from "./pages/OrderDetail.tsx";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +26,8 @@ const App = () => (
             <Route path="/produto/:id" element={<ProductDetail />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/meus-pedidos" element={<MyOrders />} />
+            <Route path="/minha-conta" element={<CustomerArea />} />
+            <Route path="/pedido/:id" element={<OrderDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/integrations/supabase/db";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -34,9 +35,29 @@ const CartDrawer = () => {
 
     setPlacing(true);
 
-    const { data: order, error: orderError } = await supabase
+    const { data: profile } = await db
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const { data: order, error: orderError } = await db
       .from("orders")
-      .insert({ user_id: user.id, total, status: "pending" })
+      .insert({
+        user_id: user.id,
+        total,
+        subtotal: total,
+        shipping_cost: 0,
+        status: "pending",
+        recipient_name: profile?.name ?? null,
+        shipping_street: profile?.address_street ?? null,
+        shipping_number: profile?.address_number ?? null,
+        shipping_complement: profile?.address_complement ?? null,
+        shipping_district: profile?.address_district ?? null,
+        shipping_city: profile?.address_city ?? null,
+        shipping_state: profile?.address_state ?? null,
+        shipping_zip: profile?.address_zip ?? null,
+      })
       .select("id")
       .single();
 

@@ -64,11 +64,11 @@ const LoginBox = () => {
                   <p className="text-xs text-muted-foreground mt-1 truncate">{user.email}</p>
                 </div>
                 <Link
-                  to="/meus-pedidos"
+                  to="/minha-conta"
                   onClick={() => setOpen(false)}
                   className="block text-sm text-foreground hover:text-primary transition-colors"
                 >
-                  Meus pedidos
+                  Área do Cliente
                 </Link>
                 {isAdmin && (
                   <Link
@@ -177,7 +177,7 @@ const Header = ({ activeTab, onTabChange, searchQuery, onSearchChange }: HeaderP
             />
           </div>
           <Link
-            to="/meus-pedidos"
+            to="/minha-conta?tab=pedidos"
             className="p-2 hover:bg-foreground/[0.03] rounded-full transition-colors"
             aria-label="Meus Pedidos"
           >

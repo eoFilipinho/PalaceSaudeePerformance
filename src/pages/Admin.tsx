@@ -282,18 +282,21 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-popover border-b border-border sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center gap-4">
-          <div className="flex items-center gap-3 shrink-0">
+      <header className="bg-popover border-b border-border sticky top-0 z-40 shadow-sm">
+        <div className="max-w-[1600px] mx-auto px-10 h-28 flex items-center gap-10">
+          <div className="flex items-center gap-5 shrink-0">
             <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <Package className="w-5 h-5 text-primary" />
-            <h1 className="text-lg font-semibold text-foreground hidden lg:block">Gerenciar Produtos</h1>
+            <Link to="/" className="font-display text-xl font-semibold tracking-tight text-foreground whitespace-nowrap">
+              Palace <span className="text-primary">Saúde & Performance</span>
+            </Link>
+            <span className="hidden lg:block h-6 w-px bg-border" />
+            <h1 className="text-sm font-medium text-muted-foreground hidden lg:block">Gerenciar Produtos</h1>
           </div>
 
-          <div className="flex-1 flex items-center justify-end gap-3">
-            <div className="relative w-full max-w-xs">
+          <div className="flex-1 flex items-center justify-end gap-5">
+            <div className="relative w-full max-w-md min-w-[220px]">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
@@ -303,7 +306,7 @@ const Admin = () => {
               />
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-[170px]">
+              <SelectTrigger className="w-[220px] shrink-0">
                 <SelectValue placeholder="Categoria" />
               </SelectTrigger>
               <SelectContent>
@@ -315,7 +318,7 @@ const Admin = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={openCreate} className="gap-2 shrink-0">
+            <Button onClick={openCreate} className="gap-2 shrink-0 whitespace-nowrap h-11 px-6">
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Novo Produto</span>
             </Button>
@@ -327,7 +330,7 @@ const Admin = () => {
       </header>
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-[1600px] mx-auto px-10 py-12">
         {loading ? (
           <div className="text-center py-20 text-muted-foreground">Carregando...</div>
         ) : products.length === 0 ? (

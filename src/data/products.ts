@@ -31,6 +31,8 @@ export type Product = {
   image: string;
   weight: string;
   description: string;
+  originalPrice?: number;
+  discountPercent?: number;
 };
 
 export const categories = [

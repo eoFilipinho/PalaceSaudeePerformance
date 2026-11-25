@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/data/products";
+import { applyPromotion } from "@/data/promotions";
 
 export type DbCategory = {
   id: string;
@@ -40,7 +41,7 @@ export const useProducts = () => {
         const mapped: Product[] = (data ?? []).map((p) => ({
           id: p.id,
           name: p.name,
-          price: Number(p.price),
+          ...applyPromotion(p.name, Number(p.price)),
           category: (p.categories as { name: string } | null)?.name ?? "",
           image: p.image_url ?? "/placeholder.svg",
           weight: p.weight ?? "",

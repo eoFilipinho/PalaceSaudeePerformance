@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
-const navItems = ["Início", "Produtos", "Cereais", "Temperos", "Vitaminas", "Suplementação", "Chás", "Grãos e Sementes"];
+const navItems = ["Início", "Produtos", "Promoções", "Cereais", "Temperos", "Vitaminas", "Suplementação", "Chás", "Grãos e Sementes"];
 
 const LoginBox = () => {
   const [open, setOpen] = useState(false);

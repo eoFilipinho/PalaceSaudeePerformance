@@ -6,6 +6,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
 import { CartProvider } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
+import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -119,9 +120,23 @@ const ProductDetailContent = () => {
             <Separator />
 
             <div className="space-y-5">
-              <p className="text-3xl font-display font-bold text-foreground">
-                R$ {product.price.toFixed(2).replace(".", ",")}
-              </p>
+              {product.originalPrice ? (
+                <div className="flex items-baseline gap-3">
+                  <p className="text-3xl font-display font-bold text-green-700">
+                    R$ {product.price.toFixed(2).replace(".", ",")}
+                  </p>
+                  <p className="text-lg text-red-600 line-through">
+                    R$ {product.originalPrice.toFixed(2).replace(".", ",")}
+                  </p>
+                  <span className="rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold text-white">
+                    -{product.discountPercent}%
+                  </span>
+                </div>
+              ) : (
+                <p className="text-3xl font-display font-bold text-foreground">
+                  R$ {product.price.toFixed(2).replace(".", ",")}
+                </p>
+              )}
 
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3 bg-muted rounded-full px-1 py-1">
@@ -167,6 +182,7 @@ const ProductDetailContent = () => {
         )}
       </main>
 
+      <Footer />
       <CartDrawer />
     </div>
   );

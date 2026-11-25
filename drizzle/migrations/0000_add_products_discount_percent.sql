@@ -1,0 +1,1 @@
+alter table public.products add column if not exists discount_percent integer not null default 0 check (discount_percent between 0 and 90);

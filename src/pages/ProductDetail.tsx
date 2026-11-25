@@ -1,11 +1,12 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Minus, ShoppingBag } from "lucide-react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { Plus, Minus, ShoppingBag, Leaf, ShieldCheck, PackageCheck, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useMemo } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
 import { CartProvider } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
+import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import { Button } from "@/components/ui/button";
@@ -14,8 +15,9 @@ import { Separator } from "@/components/ui/separator";
 const ProductDetailContent = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { addItem, count, setIsOpen } = useCart();
+  const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { products, loading } = useProducts();
 
@@ -58,37 +60,26 @@ const ProductDetailContent = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Mini header */}
-      <header className="w-full bg-popover/80 backdrop-blur-md sticky top-0 z-50 shadow-[0_1px_0_0_rgba(0,0,0,0.03)]">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar
-          </button>
-          <h1
-            className="font-display text-xl font-semibold tracking-tight text-foreground cursor-pointer"
-            onClick={() => navigate("/")}
-          >
-            Palace <span className="text-primary">Saúde & Performance</span>
-          </h1>
-          <button
-            onClick={() => setIsOpen(true)}
-            className="relative p-2 hover:bg-foreground/[0.03] rounded-full transition-colors"
-          >
-            <ShoppingBag className="w-5 h-5 text-foreground" />
-            {count > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold tabular-nums">
-                {count}
-              </span>
-            )}
-          </button>
-        </div>
-      </header>
+      <Header
+        activeTab={product.category}
+        onTabChange={(tab) => navigate(`/?tab=${encodeURIComponent(tab)}`)}
+        searchQuery={searchQuery}
+        onSearchChange={(q) => {
+          setSearchQuery(q);
+          if (q.trim()) navigate(`/?q=${encodeURIComponent(q)}`);
+        }}
+      />
 
       <main className="max-w-7xl mx-auto px-6 py-12">
+        {/* Breadcrumb */}
+        <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <Link to="/" className="hover:text-foreground transition-colors">Início</Link>
+          <span>›</span>
+          <span>{product.category}</span>
+          <span>›</span>
+          <span className="text-foreground">{product.name}</span>
+        </nav>
+
         {/* Product detail */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -163,7 +154,70 @@ const ProductDetailContent = () => {
                   Adicionar ao Carrinho
                 </Button>
               </div>
+
+              <div className="space-y-1">
+                <div className="flex items-baseline justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Total ({quantity} {quantity === 1 ? "unidade" : "unidades"})
+                  </span>
+                  <span className="font-semibold text-foreground tabular-nums">
+                    R$ {(product.price * quantity).toFixed(2).replace(".", ",")}
+                  </span>
+                </div>
+                {product.originalPrice && (
+                  <p className="text-xs font-medium text-green-700">
+                    Você economiza R$ {((product.originalPrice - product.price) * quantity).toFixed(2).replace(".", ",")}
+                  </p>
+                )}
+              </div>
             </div>
+
+            <Separator />
+
+            <ul className="space-y-3">
+              {[
+                { icon: Leaf, title: "Produto natural", text: "Selecionado com cuidado para nutrir seu corpo." },
+                { icon: ShieldCheck, title: "Compra segura", text: "Seus dados protegidos em todo o pedido." },
+                { icon: PackageCheck, title: "Acompanhe seu pedido", text: "Veja o andamento em Meus Pedidos." },
+              ].map(({ icon: Icon, title, text }) => (
+                <li key={title} className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
+                    <Icon className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{title}</p>
+                    <p className="text-xs text-muted-foreground">{text}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <div className="rounded-xl bg-popover shadow-card divide-y divide-black/5 text-sm">
+              <div className="flex justify-between px-5 py-3">
+                <span className="text-muted-foreground">Categoria</span>
+                <span className="font-medium text-foreground">{product.category}</span>
+              </div>
+              <div className="flex justify-between px-5 py-3">
+                <span className="text-muted-foreground">Quantidade</span>
+                <span className="font-medium text-foreground">{product.weight}</span>
+              </div>
+              {product.discountPercent && (
+                <div className="flex justify-between px-5 py-3">
+                  <span className="text-muted-foreground">Promoção</span>
+                  <span className="font-medium text-green-700">{product.discountPercent}% de desconto</span>
+                </div>
+              )}
+            </div>
+
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`${product.name} - ${window.location.href}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Share2 className="h-4 w-4" />
+              Compartilhar no WhatsApp
+            </a>
           </div>
         </motion.div>
 

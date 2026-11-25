@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/data/products";
-import { applyPromotion } from "@/data/promotions";
+import { applyPromotion, applyDiscount } from "@/data/promotions";
 
 export type DbCategory = {
   id: string;
@@ -34,14 +34,16 @@ export const useProducts = () => {
   useEffect(() => {
     supabase
       .from("products")
-      .select("id, name, price, image_url, weight, description, categories(name)")
+      .select("*, categories(name)")
       .eq("is_active", true)
       .order("name")
       .then(({ data }) => {
         const mapped: Product[] = (data ?? []).map((p) => ({
           id: p.id,
           name: p.name,
-          ...applyPromotion(p.name, Number(p.price)),
+          ...("discount_percent" in p
+            ? applyDiscount(Number(p.price), Number((p as { discount_percent?: number | null }).discount_percent ?? 0))
+            : applyPromotion(p.name, Number(p.price))),
           category: (p.categories as { name: string } | null)?.name ?? "",
           image: p.image_url ?? "/placeholder.svg",
           weight: p.weight ?? "",

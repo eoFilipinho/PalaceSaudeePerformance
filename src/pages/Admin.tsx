@@ -34,6 +34,7 @@ type Product = {
   weight: string | null;
   description: string | null;
   stock_quantity: number;
+  discount_percent?: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -47,6 +48,7 @@ const emptyForm = {
   weight: "",
   description: "",
   stock_quantity: "0",
+  discount_percent: "",
   is_active: true,
 };
 
@@ -188,6 +190,7 @@ const Admin = () => {
       weight: product.weight || "",
       description: product.description || "",
       stock_quantity: String(product.stock_quantity),
+      discount_percent: product.discount_percent ? String(product.discount_percent) : "",
       is_active: product.is_active,
     });
     setDialogOpen(true);
@@ -199,8 +202,14 @@ const Admin = () => {
       return;
     }
 
+    const discount = form.discount_percent === "" ? 0 : Number(form.discount_percent);
+    if (!Number.isFinite(discount) || discount < 0 || discount > 90) {
+      toast.error("O desconto deve ficar entre 0 e 90%");
+      return;
+    }
+
     setSaving(true);
-    const payload = {
+    const payload: Record<string, unknown> = {
       name: form.name,
       price: parseFloat(form.price),
       category_id: form.category_id,
@@ -210,25 +219,29 @@ const Admin = () => {
       stock_quantity: parseInt(form.stock_quantity) || 0,
       is_active: form.is_active,
     };
+    // Só envia o desconto quando há valor, ou para limpar uma promoção existente (evita erro se a coluna ainda não existir).
+    if (discount > 0 || (editingProduct && "discount_percent" in editingProduct)) {
+      payload.discount_percent = discount;
+    }
 
     if (editingProduct) {
       const { error } = await supabase
         .from("products")
-        .update(payload)
+        .update(payload as never)
         .eq("id", editingProduct.id);
 
       if (error) {
-        toast.error("Erro ao atualizar produto");
+        toast.error(`Erro ao atualizar produto: ${error.message}`);
       } else {
         toast.success("Produto atualizado!");
         setDialogOpen(false);
         fetchProducts();
       }
     } else {
-      const { error } = await supabase.from("products").insert(payload);
+      const { error } = await supabase.from("products").insert(payload as never);
 
       if (error) {
-        toast.error("Erro ao criar produto");
+        toast.error(`Erro ao criar produto: ${error.message}`);
       } else {
         toast.success("Produto criado!");
         setDialogOpen(false);
@@ -386,7 +399,21 @@ const Admin = () => {
                       {categoryName(product.category_id)}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      R$ {Number(product.price).toFixed(2)}
+                      {product.discount_percent ? (
+                        <div className="flex flex-col items-end leading-tight">
+                          <span className="text-xs text-red-600 line-through">
+                            R$ {Number(product.price).toFixed(2)}
+                          </span>
+                          <span className="font-bold text-green-700">
+                            R$ {(Math.round(Number(product.price) * (100 - product.discount_percent)) / 100).toFixed(2)}
+                          </span>
+                          <span className="mt-0.5 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                            -{product.discount_percent}%
+                          </span>
+                        </div>
+                      ) : (
+                        <>R$ {Number(product.price).toFixed(2)}</>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <span
@@ -482,6 +509,26 @@ const Admin = () => {
                   placeholder="0"
                 />
               </div>
+            </div>
+            <div>
+              <Label htmlFor="discount">Desconto (%) — promoção</Label>
+              <Input
+                id="discount"
+                type="number"
+                min="0"
+                max="90"
+                value={form.discount_percent}
+                onChange={(e) => setForm({ ...form, discount_percent: e.target.value })}
+                placeholder="0 = sem promoção"
+              />
+              {Number(form.discount_percent) > 0 && Number(form.price) > 0 && (
+                <p className="text-xs mt-1">
+                  <span className="text-red-600 line-through">R$ {Number(form.price).toFixed(2)}</span>{" "}
+                  <span className="font-semibold text-green-700">
+                    R$ {(Math.round(Number(form.price) * (100 - Number(form.discount_percent))) / 100).toFixed(2)}
+                  </span>
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

@@ -160,9 +160,11 @@ const Header = ({ activeTab, onTabChange, searchQuery, onSearchChange }: HeaderP
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         {/* Logo */}
         <div className="flex-shrink-0">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
-            Palace <span className="text-primary">Saúde & Performance</span>
-          </h1>
+          <Link to="/">
+            <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+              Palace <span className="text-primary">Saúde & Performance</span>
+            </h1>
+          </Link>
         </div>
 
         {/* Search + Icons */}
@@ -170,6 +172,7 @@ const Header = ({ activeTab, onTabChange, searchQuery, onSearchChange }: HeaderP
           <div className="relative group max-w-md w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
             <input
+              id="site-search"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               className="w-full bg-foreground/[0.03] rounded-full py-2.5 pl-10 pr-4 text-sm focus:bg-foreground/[0.06] transition-all outline-none placeholder:text-muted-foreground"

@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Header from "@/components/Header";
 import CartDrawer from "@/components/CartDrawer";
 import HeroSection from "@/components/HeroSection";
@@ -8,10 +9,25 @@ import Footer from "@/components/Footer";
 import { BenefitsStrip, CategoryTiles } from "@/components/HomeHighlights";
 import { CartProvider } from "@/context/CartContext";
 import { useProducts } from "@/hooks/useProducts";
+import { categories } from "@/data/products";
+
+const validTabs = ["Início", "Produtos", "Promoções", ...categories.filter((c) => c !== "Todos")];
 
 const IndexContent = () => {
-  const [activeTab, setActiveTab] = useState("Início");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [params] = useSearchParams();
+  const tabParam = params.get("tab") ?? "";
+  const [activeTab, setActiveTab] = useState(validTabs.includes(tabParam) ? tabParam : "Início");
+  const [searchQuery, setSearchQuery] = useState(params.get("q") ?? "");
+
+  // Vindo da página de um produto com uma busca: devolve o foco ao campo, no fim do texto.
+  useEffect(() => {
+    if (!params.get("q")) return;
+    const el = document.getElementById("site-search") as HTMLInputElement | null;
+    if (el) {
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    }
+  }, []);
   const { products } = useProducts();
 
   const featuredProducts = useMemo(() => products.filter((_, i) => i % 2 === 0).slice(0, 12), [products]);

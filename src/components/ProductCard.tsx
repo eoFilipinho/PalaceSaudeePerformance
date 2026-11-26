@@ -16,7 +16,12 @@ const ProductCard = ({ product }: { product: Product }) => {
       onClick={() => navigate(`/produto/${product.id}`)}
     >
       {/* Image area */}
-      <div className="aspect-square bg-accent flex items-center justify-center overflow-hidden">
+      <div className="relative aspect-square bg-accent flex items-center justify-center overflow-hidden">
+        {product.discountPercent && (
+          <span className="absolute left-3 top-3 z-10 rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-bold text-white">
+            -{product.discountPercent}%
+          </span>
+        )}
         <img
           src={product.image}
           alt={product.name}
@@ -34,9 +39,20 @@ const ProductCard = ({ product }: { product: Product }) => {
         <p className="text-xs text-muted-foreground">{product.weight}</p>
 
         <div className="flex items-center justify-between pt-1">
-          <span className="text-sm font-semibold text-foreground tabular-nums">
-            R$ {product.price.toFixed(2).replace(".", ",")}
-          </span>
+          {product.originalPrice ? (
+            <div className="flex flex-col leading-tight">
+              <span className="text-xs text-red-600 line-through tabular-nums">
+                R$ {product.originalPrice.toFixed(2).replace(".", ",")}
+              </span>
+              <span className="text-sm font-bold text-green-700 tabular-nums">
+                R$ {product.price.toFixed(2).replace(".", ",")}
+              </span>
+            </div>
+          ) : (
+            <span className="text-sm font-semibold text-foreground tabular-nums">
+              R$ {product.price.toFixed(2).replace(".", ",")}
+            </span>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); addItem(product); }}
             className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors"

@@ -34,6 +34,7 @@ type Product = {
   weight: string | null;
   description: string | null;
   stock_quantity: number;
+  discount_percent?: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -47,6 +48,7 @@ const emptyForm = {
   weight: "",
   description: "",
   stock_quantity: "0",
+  discount_percent: "",
   is_active: true,
 };
 
@@ -188,6 +190,7 @@ const Admin = () => {
       weight: product.weight || "",
       description: product.description || "",
       stock_quantity: String(product.stock_quantity),
+      discount_percent: product.discount_percent ? String(product.discount_percent) : "",
       is_active: product.is_active,
     });
     setDialogOpen(true);
@@ -199,8 +202,14 @@ const Admin = () => {
       return;
     }
 
+    const discount = form.discount_percent === "" ? 0 : Number(form.discount_percent);
+    if (!Number.isFinite(discount) || discount < 0 || discount > 90) {
+      toast.error("O desconto deve ficar entre 0 e 90%");
+      return;
+    }
+
     setSaving(true);
-    const payload = {
+    const payload: Record<string, unknown> = {
       name: form.name,
       price: parseFloat(form.price),
       category_id: form.category_id,
@@ -210,25 +219,29 @@ const Admin = () => {
       stock_quantity: parseInt(form.stock_quantity) || 0,
       is_active: form.is_active,
     };
+    // Só envia o desconto quando há valor, ou para limpar uma promoção existente (evita erro se a coluna ainda não existir).
+    if (discount > 0 || (editingProduct && "discount_percent" in editingProduct)) {
+      payload.discount_percent = discount;
+    }
 
     if (editingProduct) {
       const { error } = await supabase
         .from("products")
-        .update(payload)
+        .update(payload as never)
         .eq("id", editingProduct.id);
 
       if (error) {
-        toast.error("Erro ao atualizar produto");
+        toast.error(`Erro ao atualizar produto: ${error.message}`);
       } else {
         toast.success("Produto atualizado!");
         setDialogOpen(false);
         fetchProducts();
       }
     } else {
-      const { error } = await supabase.from("products").insert(payload);
+      const { error } = await supabase.from("products").insert(payload as never);
 
       if (error) {
-        toast.error("Erro ao criar produto");
+        toast.error(`Erro ao criar produto: ${error.message}`);
       } else {
         toast.success("Produto criado!");
         setDialogOpen(false);
@@ -282,18 +295,21 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-popover border-b border-border sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center gap-4">
-          <div className="flex items-center gap-3 shrink-0">
+      <header className="bg-popover border-b border-border sticky top-0 z-40 shadow-sm">
+        <div className="max-w-[1600px] mx-auto px-10 h-28 flex items-center gap-10">
+          <div className="flex items-center gap-5 shrink-0">
             <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <Package className="w-5 h-5 text-primary" />
-            <h1 className="text-lg font-semibold text-foreground hidden lg:block">Gerenciar Produtos</h1>
+            <Link to="/" className="font-display text-xl font-semibold tracking-tight text-foreground whitespace-nowrap">
+              Palace <span className="text-primary">Saúde & Performance</span>
+            </Link>
+            <span className="hidden lg:block h-6 w-px bg-border" />
+            <h1 className="text-sm font-medium text-muted-foreground hidden lg:block">Gerenciar Produtos</h1>
           </div>
 
-          <div className="flex-1 flex items-center justify-end gap-3">
-            <div className="relative w-full max-w-xs">
+          <div className="flex-1 flex items-center justify-end gap-5">
+            <div className="relative w-full max-w-md min-w-[220px]">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
@@ -303,7 +319,7 @@ const Admin = () => {
               />
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-[170px]">
+              <SelectTrigger className="w-[220px] shrink-0">
                 <SelectValue placeholder="Categoria" />
               </SelectTrigger>
               <SelectContent>
@@ -315,7 +331,7 @@ const Admin = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={openCreate} className="gap-2 shrink-0">
+            <Button onClick={openCreate} className="gap-2 shrink-0 whitespace-nowrap h-11 px-6">
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Novo Produto</span>
             </Button>
@@ -327,7 +343,7 @@ const Admin = () => {
       </header>
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-[1600px] mx-auto px-10 py-12">
         {loading ? (
           <div className="text-center py-20 text-muted-foreground">Carregando...</div>
         ) : products.length === 0 ? (
@@ -383,7 +399,21 @@ const Admin = () => {
                       {categoryName(product.category_id)}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      R$ {Number(product.price).toFixed(2)}
+                      {product.discount_percent ? (
+                        <div className="flex flex-col items-end leading-tight">
+                          <span className="text-xs text-red-600 line-through">
+                            R$ {Number(product.price).toFixed(2)}
+                          </span>
+                          <span className="font-bold text-green-700">
+                            R$ {(Math.round(Number(product.price) * (100 - product.discount_percent)) / 100).toFixed(2)}
+                          </span>
+                          <span className="mt-0.5 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                            -{product.discount_percent}%
+                          </span>
+                        </div>
+                      ) : (
+                        <>R$ {Number(product.price).toFixed(2)}</>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <span
@@ -479,6 +509,26 @@ const Admin = () => {
                   placeholder="0"
                 />
               </div>
+            </div>
+            <div>
+              <Label htmlFor="discount">Desconto (%) — promoção</Label>
+              <Input
+                id="discount"
+                type="number"
+                min="0"
+                max="90"
+                value={form.discount_percent}
+                onChange={(e) => setForm({ ...form, discount_percent: e.target.value })}
+                placeholder="0 = sem promoção"
+              />
+              {Number(form.discount_percent) > 0 && Number(form.price) > 0 && (
+                <p className="text-xs mt-1">
+                  <span className="text-red-600 line-through">R$ {Number(form.price).toFixed(2)}</span>{" "}
+                  <span className="font-semibold text-green-700">
+                    R$ {(Math.round(Number(form.price) * (100 - Number(form.discount_percent))) / 100).toFixed(2)}
+                  </span>
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

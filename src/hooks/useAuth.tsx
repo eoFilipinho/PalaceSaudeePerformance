@@ -15,6 +15,7 @@ type AuthContextType = {
     phone?: string,
   ) => Promise<{ error: string | null; needsConfirmation: boolean }>;
   signOut: () => Promise<void>;
+  updatePassword: (password: string) => Promise<{ error: string | null }>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -83,8 +84,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAdmin(false);
   };
 
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password: password,
+    });
+
+    return { error: error ? error.message : null };
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        isAdmin,
+        loading,
+        signIn,
+        signUp,
+        signOut,
+        updatePassword,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
